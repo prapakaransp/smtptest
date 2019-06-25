@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="d9ae56a2-7b1a-4dd9-8d45-69c24965ac4a" >
+		<email:smtp-connection host="smtp.gmail.com" user="nallavashu@gmail.com" port="587" password="*****">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<flow name="smtptestFlow" doc:id="514486e7-f6aa-458b-8e6d-ef3e58f26503" >
+		<scheduler doc:name="Scheduler" doc:id="6a7547d5-a4b1-4337-9f63-67e82bcf3194" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="2" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+       <!--  <set-attachment attachmentName="image.jpg"
+             value="#[java.nio.file.Files.readAllBytes(java.nio.file.Paths.get('resources/template/tiger.jpg'))]"
+             contentType="image/jpg" doc:name="Create Attachment" /> -->
+		
+		<file:read doc:name="Read" doc:id="de78f929-aa11-45c8-9b52-dd20e6300fda" path="C:\AnypointStudio\mule4-workspace\smtptest\src\main\resources\template\tiger.jpeg" outputMimeType="image/jpeg"/>
+		<ee:transform doc:name="Transform Message" doc:id="367597e9-a741-46bc-961f-a761b3d15583" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output multipart/form-data
+---
+{
+parts :{
+	
+       headers : {
+       	"Content:Disposition" : {
+       		
+       		"filename" : "<image.jpeg>",
+       		"name" : "image",
+            "Content-ID" : "<image.jpeg>"
+       	},
+       	"Content-Type" : payload.^mimeType
+       },
+       "content" : payload
+	
+}	
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parse-template doc:name="Parse Template" doc:id="037f7976-104c-4edf-9291-2edbbf5ab0f9" location="C:\AnypointStudio\mule4-workspace\smtptest\src\main\resources\template\email-inlined.html">
+		</parse-template>
+		<email:send doc:name="Send" doc:id="0e13f688-d4f5-4e75-98c4-f89d08dee3e2" config-ref="Email_SMTP" fromAddress="mulesoftalert@amgen.com" subject="Business exception alert">
+			<email:to-addresses >
+				<email:to-address value="prapakaran.perumalsamy@cognizant.com" />
+				<email:to-address value="sthangav@amgen.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html" encoding="UTF-8" contentTransferEncoding="7BIT">
+			</email:body>
+		</email:send>
+		<logger level="INFO" doc:name="Logger" doc:id="98b015a0-25cc-47eb-8f46-0b6209314099" message='"email was sent"'/>
+	</flow>
+</mule>
